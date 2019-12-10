@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="de">
+    <head>
+        <meta charset="utf-8">
+        <title>Beta Huhn - URL Shortener</title>
+        <meta name="viewport" content="width=device-width,initial-scale=1">
+        <meta name="google-site-verification" content="WT7HV-y_YFwgr8F9mgBk7_YHPNtcOJyvaCrFTp7Ms_0" />
+        <link rel="stylesheet" href="main.css">
+        <link rel="icon" href="/favicon.ico" type="image/x-icon">
+        <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
+        <script type="text/javascript">
+          if (screen.width <= 699) {
+           document.location = "/mobile/home";
+          }
+          </script>
+        
+    </head>
+<nav class="menu" tabindex="0">
+	<div class="smartphone-menu-trigger"></div>
+  <header class="avatar">
+		<img src="https://betahuhn.de/beta1.png" />
+    <pre id="name"></pre>
+  </header>
+	<ul>
+    <li tabindex="0" onclick="location.href='/';" class="icon-home"><span>Home</span></li>
+    <li onclick="location.href='https://betahuhn.de';" tabindex="0" class="icon-upload"><span>URLs Kürzen</span></li>
+    <li onclick="location.href='/logout';" tabindex="2" class="icon-logout"><span>Log out</span></li>
+     <li onclick="location.href='https://console.betahuhn.de';" tabindex="0" class="icon-logout"><span>Console</span></li>
+    <li onclick="location.href='/settings';" tabindex="0" class="icon-profile"><span>Einstellungen</span></li>
+  </ul>
+</nav>
+<body onload="authenticate();">
+    <main>
+            <!--<a id="icon" href="/new" ><img src="https://betahuhn.de/beta1.png" alt="Betahuhn" width="60" height="60"></a>-->
+            <div class="container">           
+                
+                        <section class="animation-box">
+                            <div class="first-text">
+                                <pre id="header"></pre>
+                            </div>
+                            <div class="second-text">
+                                <pre id="button1"></pre>
+                            </div>
+                        </section>
+                   
+                   
+                </div>
+            </div>         
+        </main>
+        <script src="main.js"></script>
+</body>
+</html>

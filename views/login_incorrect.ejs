@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="de">
+    <head>
+        <meta charset="utf-8">
+        <title>Beta Huhn - URL Shortener</title>
+        <meta name="viewport" content="width=device-width,initial-scale=1">
+        <meta name="google-site-verification" content="WT7HV-y_YFwgr8F9mgBk7_YHPNtcOJyvaCrFTp7Ms_0" />
+        <link rel="stylesheet" href="/login/main.css">
+        <link rel="icon" href="/favicon.ico" type="image/x-icon">
+        <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
+        
+        <!--<script type="text/javascript">
+          if (screen.width <= 699) {
+           document.location = "/mobile";
+          }
+          </script>-->
+    </head>
+<body>
+    <main>
+            <a href="/" ><img src="/image.png" alt="Betahuhn" width="200" height="200"></a>
+            <h1>Login</h1>
+            <div>           
+            <center>        
+            <form action="/api/login" method="POST">
+            <input type="text" name="field1" id="custom-input" placeholder="username">
+            <input type="password" name="field2" id="custom-input" placeholder="password"><br>
+            <input type="submit" id="upload-button" value="Login"/>
+            </form>
+            <h1><%=error%></h1>
+        </center>    
+    </div>         
+        </main>
+        <script src="/login/main.js"></script>
+        <script>
+            window.history.pushState("", "", '/login');
+        </script>
+        
+</body>
+</html>

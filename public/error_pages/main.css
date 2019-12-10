@@ -1,0 +1,141 @@
+body {
+    background-color: rgb(10, 23, 48);
+}
+
+main {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    color: rgb(255, 255, 255);
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 18px;
+    margin: 5em;
+}
+footer {
+    position:fixed;
+    align-items: center;
+    font-family: Arial, Helvetica, sans-serif;
+    background-color:#E62520;
+    bottom:0px; left:0px; right:0px;
+}
+.banner {
+    color: white;
+    padding: 1rem 2rem;
+    outline: none;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 1rem;
+    margin: -0.1rem;
+    align-items: center;
+}
+
+#url-input {
+    font: inherit;
+    font-size: 2.7rem;
+    font-family: monospace;
+    font-weight: bold;
+    padding: 0.3em;
+    width: 80%;
+    background-color: rgba(255, 255, 255, 0.5);
+    border: 0;
+    outline: 0;
+}
+
+#url-input:focus {
+    background-color: rgba(185, 185, 185, 0.8);
+}
+
+#shorten-button {
+    background-color:rgb(226, 226, 226);
+    padding: 1rem 2rem;
+    color: rgb(0, 0, 0);
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 1.5rem;
+    border: 0;
+    margin: 3rem;
+    cursor: pointer;
+   
+}
+
+#out {
+    font-size: 1.5rem;
+    float: left;
+    position: relative;
+}
+
+#out a {
+    color:rgb(224, 224, 224);
+}
+
+a, a:link, a:visited, a:focus, a:hover, a:active{
+    color: white;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 2rem;
+    padding: 0.5rem 1.4rem;
+    outline: none;
+    text-decoration: none;
+}
+
+#custom-button {
+    background-color:rgb(226, 226, 226);
+    padding: 1rem 2rem;
+    color: rgb(0, 0, 0);
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 1.5rem;
+    border: 0;
+    margin: 3rem;
+    cursor: pointer; 
+}
+
+#custom-input2:focus {
+    background-color: rgba(255, 255, 255, 0.8);
+}
+
+.show {
+    font: inherit;
+    font-size: 2.7rem;
+    font-family: monospace;
+    font-weight: bold;
+    padding: 0.3em;
+    width: 80%;
+    background-color: rgba(255, 255, 255, 0.5);
+    border: 0;
+    outline: 0;
+
+}
+
+#shorten-button2 {
+    background-color:rgb(226, 226, 226);
+    padding: 1rem 2rem;
+    color: rgb(0, 0, 0);
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 1.5rem;
+    border: 0;
+    margin: 3rem;
+    cursor: pointer;
+}
+
+.copybutton {
+    background-color:rgb(226, 226, 226);
+    padding: 1rem 2rem;
+    color: rgb(0, 0, 0);
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 1.5rem;
+    border: 0;
+    margin: 0.5rem;
+    cursor: pointer;
+    position: relative;
+}
+
+.copybuttonb {
+    background-color: rgb(153, 153, 153);
+    padding: 1rem 2rem;
+    color: rgb(0, 0, 0);
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 1.5rem;
+    border: 0;
+    margin: 0.5rem;
+    cursor: pointer;
+    position: relative;
+}
+
