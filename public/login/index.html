@@ -1,42 +1,45 @@
 <!DOCTYPE html>
 <html lang="de">
-    <head>
-        <meta charset="utf-8">
-        <title>Beta Huhn - URL Shortener</title>
-        <meta name="viewport" content="width=device-width,initial-scale=1">
-        <meta name="google-site-verification" content="WT7HV-y_YFwgr8F9mgBk7_YHPNtcOJyvaCrFTp7Ms_0" />
-        <link rel="stylesheet" href="main.css">
-        <link rel="icon" href="/favicon.ico" type="image/x-icon">
-        <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
-        
-        <script type="text/javascript">
-          if (screen.width <= 699) {
-           document.location = "/mobile/login";
-          }
-          </script>
-    </head>
+
+<head>
+    <meta charset="utf-8">
+    <title>Beta Huhn - URL Shortener</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="google-site-verification" content="WT7HV-y_YFwgr8F9mgBk7_YHPNtcOJyvaCrFTp7Ms_0" />
+    <link rel="stylesheet" href="main.css">
+    <link rel="icon" href="/favicon.ico" type="image/x-icon">
+    <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
+
+    <script type="text/javascript">
+        if (screen.width <= 699) {
+            document.location = "/mobile/login";
+        }
+    </script>
+</head>
+
 <body>
     <main>
-            <a id="icon" href="/new" ><img src="https://betahuhn.de/beta1.png" alt="Betahuhn" width="60" height="60"></a>
-            
-            <div class="container">           
-                <div class="centered">
-                    <center>
-                        <h1>Login</h1>     
-                        <input type="text" class="form__field" id="email-input" placeholder="email">
-                        <input type="password" class="form__field" id="passwd-input" placeholder="password"><br>
-                        <button class="btn btn--primary uppercase" onclick="button()">Login</button>
-                        
-                        <p>Forgot your password? <a href="/reset-password">Yes!</a></p>
-                        <pre id="error"></pre>
-                    </center>
-                </div>
+        <a id="icon" href="/new"><img src="https://betahuhn.de/beta1.png" alt="Betahuhn" width="60" height="60"></a>
+
+        <div class="container">
+            <div class="centered">
+                <center>
+                    <h1>Login</h1>
+                    <input type="text" class="form__field" id="email-input" placeholder="email">
+                    <input type="password" class="form__field" id="passwd-input" placeholder="password"><br>
+                    <button class="btn btn--primary uppercase" id="login-button" onclick="login()">Login</button>
+
+                    <p>Forgot your password? <a href="/reset-password">Yes!</a></p>
+                    <pre id="error"></pre>
+                </center>
+            </div>
             <div class="container signin">
-                    <p>Don't have an account yet? <a class="bottom" href="/register">Register</a></p>
-                </div>
-         
-            </div>         
-        </main>
-        <script src="main.js"></script>
+                <p>Don't have an account yet? <a class="bottom" href="/register">Register</a></p>
+            </div>
+
+        </div>
+    </main>
+    <script src="main.js"></script>
 </body>
+
 </html>

@@ -1,35 +1,36 @@
 <!DOCTYPE html>
-<html lang="de">
-    <head>
-        <meta charset="utf-8">
-        <title>Beta Huhn - URL Shortener</title>
-        <meta name="viewport" content="width=device-width,initial-scale=1">
-        <meta name="google-site-verification" content="WT7HV-y_YFwgr8F9mgBk7_YHPNtcOJyvaCrFTp7Ms_0" />
-        <link rel="stylesheet" href="main.css">
-        <link rel="stylesheet" href="dropzone.css">
-        <link rel="icon" href="/favicon.ico" type="image/x-icon">
-        <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
-        
-        <!--<script type="text/javascript">
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <title>Beta Huhn - URL Shortener</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <link rel="stylesheet" href="main.css">
+    <link rel="icon" href="/favicon.ico" type="image/x-icon">
+    <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
+
+    <!--<script type="text/javascript">
           if (screen.width <= 699) {
            document.location = "/mobile";
           }
           </script>-->
-    </head>
+</head>
+
 <body>
     <main>
-            <a id="icon" href="/new" ><img src="https://betahuhn.de/beta1.png" alt="Betahuhn" width="60" height="60"></a>
-            
-            <div class="container">           
-                <div class="centered">
-                    <center>
-                        <h1>Do you really want to log out?</h1>       
-                        <button class="btn btn--primary uppercase" onclick="button()">Yes!</button>
-                        <pre id="error"></pre>
-                    </center>
-                </div>
-            </div>         
-        </main>
-        <script src="main.js"></script>
+        <a id="icon" href="/new"><img src="https://betahuhn.de/beta1.png" alt="Betahuhn" width="60" height="60"></a>
+
+        <div class="container">
+            <div class="centered">
+                <center>
+                    <h1>Do you really want to log out?</h1>
+                    <button class="btn btn--primary uppercase" onclick="logout()">Yes!</button>
+                    <pre id="error"></pre>
+                </center>
+            </div>
+        </div>
+    </main>
+    <script src="main.js"></script>
 </body>
+
 </html>
