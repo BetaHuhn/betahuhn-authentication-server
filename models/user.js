@@ -9,7 +9,7 @@ const fs = require('fs')
 const jwtKey = fs.readFileSync('./jwt-key', 'utf8');
 const jwtPublic = fs.readFileSync('./jwt-key.pub', 'utf8');
 const jwtExpirySecondsRefresh = 1209600;
-const jwtExpirySecondsAccess = 60; //900
+const jwtExpirySecondsAccess = 900; //900
 
 const OutlookKey = require('../key.json').password;
 let transporter = nodemailer.createTransport({
@@ -92,8 +92,10 @@ userSchema.pre('save', async function(next) {
     next()
 })
 
-userSchema.methods.generateRefreshToken = async function(oldRefreshToken) {
-    const user = this
+userSchema.methods.generateRefreshToken = async function(cid, oldRefreshToken) {
+    /* CID is the client ID generated. It is based on specific request headers to make sure the client the token was created for is the one trying to generate a new token */
+    console.log("Generating refresh token");
+    const user = this;
     if (oldRefreshToken != undefined) {
         for (i in user.tokens) {
             if (user.tokens[i].token == oldRefreshToken) {
@@ -118,7 +120,7 @@ userSchema.methods.generateRefreshToken = async function(oldRefreshToken) {
     var name = user.name
     var rights = user.rights
     var email = user.email
-    const token = jwt.sign({ user_id, name, rights, email, token_family: token_family }, jwtKey, {
+    const token = jwt.sign({ user_id, name, rights, email, token_family: token_family, cid: cid }, jwtKey, {
         issuer: "auth.betahuhn.de",
         subject: email,
         audience: user_id,
@@ -174,7 +176,7 @@ userSchema.statics.isAuthorized = async function(token) {
     }
 }
 
-userSchema.statics.refreshTokenValid = async function(token) {
+userSchema.statics.refreshTokenValid = async function(token, clientID) {
     if (!token) {
         console.log("No refresh token")
         throw ({ error: 'No token', code: 402 })
@@ -184,30 +186,34 @@ userSchema.statics.refreshTokenValid = async function(token) {
         payload = jwt.verify(token, jwtPublic) //Check if refresh token is still valid
         var user_id = payload.user_id;
         var token_family = payload.token_family;
-        console.log("Family: " + token_family)
+        console.log("Family: " + token_family.slice(0,10))
         var user = await User.findOne({ user_id })
         if (!user) {
             throw ({ error: 'No user found', code: 405 })
         }
         var isValid = await user.isValidToken(token) //Check if token is still on whitelist
-        if (!isValid) {
-            console.log(user.tokens)
-            console.log(user.tokens.length)
+        if (payload.cid != clientID) {
+            console.log("Saved cid: " + payload.cid)
+            console.log("Send cid: " + clientID)
+            console.log("cid don't match")
+            isValid = false;
+        }
+        if (!isValid) { //If token not on whitelist or client identification doesn't match saved cid
+            //console.log(user.tokens)
+            //console.log(user.tokens.length)
             var tokenLength = user.tokens.length;
             for (i = 0; i < tokenLength; i++) {
-                console.log(i)
-                console.log("Family: " + user.tokens[i].family)
+                //console.log(i)
+                //console.log("Family: " + user.tokens[i].family)
                 if (user.tokens[i].family == token_family) {
-                    console.log("macth")
+                    // console.log("match")
                     user.tokens.pop(user.tokens[i])
                 }
             }
             //user.tokens.pop(user.tokens[0])
             console.log("removed")
-            console.log(user.tokens)
+                //console.log(user.tokens)
             await user.save()
-
-
             throw ({ error: 'Token not valid', code: 400 })
         }
         return user
@@ -224,7 +230,7 @@ userSchema.statics.getTokenFamily = async function(refresh_token) {
         payload = jwt.verify(refresh_token, jwtPublic) //Check if refresh token is still valid
         var user_id = payload.user_id;
         var token_family = payload.token_family;
-        console.log("Family: " + token_family)
+        console.log("Family: " + token_family.slice(0,10))
         return token_family
     } catch (e) {
         if (e instanceof jwt.JsonWebTokenError) { //Refresh token not valid -> has to log in again
@@ -246,16 +252,22 @@ userSchema.methods.generateResetToken = async function() {
     return token
 }
 
-userSchema.methods.logoutToken = async function(token) {
+userSchema.methods.logoutToken = async function(token, all) {
     const user = this
+        //console.log(user.tokens)
     for (i in user.tokens) {
-        if (user.tokens[i].token == token) {
+        if (all) {
+            user.tokens[i].remove();
+            var found = true;
+        } else if (user.tokens[i].token == token) {
             user.tokens[i].remove(token);
-            await user.save()
-            return true
+            var found = true;
+        } else {
+            var found = false;
         }
     }
-    return false
+    await user.save()
+    return found;
 }
 
 userSchema.methods.isValidToken = async function(token) {

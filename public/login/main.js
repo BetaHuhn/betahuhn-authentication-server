@@ -31,7 +31,11 @@ async function login() {
             window.location.replace("/");
         } else {
             console.log("Redirecting to " + ref)
-            window.location.replace("https://" + ref);
+            if (ref.indexOf('http') !== -1) {
+                window.location.replace(ref);
+            } else {
+                window.location.replace("https://" + ref);
+            }
         }
     } else {
         error.innerHTML = `<p id=text >${json.status}: Es ist ein Fehler aufgetreten, bitte veruche es erneut. </p>`;

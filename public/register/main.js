@@ -20,7 +20,7 @@ async function register() {
     const json = await response.json();
     if (json.status == 400) {
         error.innerHTML = `<p id=text >Email not valid</p>`;
-    } else if (json.status == 401) {
+    } else if (json.status == 407) {
         error.innerHTML = `<p id=text >Email already in use</p>`;
     } else if (json.status == 404) {
         error.innerHTML = `<p id=text >Password has whitespace</p>`;
@@ -28,7 +28,7 @@ async function register() {
         error.innerHTML = `<p id=text >Password too long (max. 20)</p>`;
     } else if (json.status == 406) {
         error.innerHTML = `<p id=text >Password too short (min. 8)</p>`;
-    } else if (json.status == 407) {
+    } else if (json.status == 401) {
         error.innerHTML = `<p id=text >Password not valid. (Only A-z 0-9 !?)</p>`;
     } else if (json.status == 408) {
         error.innerHTML = `<p id=text >Please fill out every field!</p>`;

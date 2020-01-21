@@ -3,13 +3,25 @@ const email = document.getElementById('email-input'),
     error = document.getElementById('error')
 
 async function logout() {
+    var url_string = window.location.href
+    var url = new URL(url_string);
+    var ref = url.searchParams.get("ref");
+    var all = url.searchParams.get("all");
+    if (all == undefined) {
+        all = false;
+    }
+    if (ref == undefined) {
+        var path = '/auth/logout?all=' + all;
+    } else {
+        var path = '/auth/logout?ref=' + ref + '&all=' + all;
+    }
     const options = {
         method: 'GET',
         headers: {
             'Content-Type': 'application/json'
         },
     };
-    const response = await fetch('/auth/logout', options);
+    const response = await fetch(path, options);
     const json = await response.json();
     delete_cookie("access_token", "/", ".betahuhn.de")
     delete_cookie("refresh_token", "/", ".betahuhn.de")

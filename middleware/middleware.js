@@ -1,79 +1,102 @@
 const User = require('../models/user.js');
 const md5 = require('md5');
 const cache = require('memory-cache');
+const geoip = require('geoip-lite');
+const crypto = require('crypto')
 
 var routerCache = new cache.Cache();
 
 module.exports = {
     auth: (rights) => {
-        return async (req, res, next) => {
-            try{
+        return async(req, res, next) => {
+            try {
                 const user = await User.isAuthorized(req.cookies.token)
-                if(user.rights.admin && rights == "admin"){
+                if (user.rights.admin && rights == "admin") {
                     req.user = user;
                     console.log(user.name + " is authorized")
                     next()
-                }else if(user.rights.user && rights == "user"){
+                } else if (user.rights.user && rights == "user") {
                     req.user = user;
                     console.log(user.name + " is authorized")
                     next()
-                }else if(user.rights.moderator && rights == "moderator"){
+                } else if (user.rights.moderator && rights == "moderator") {
                     req.user = user;
                     console.log(user.name + " is authorized")
                     next()
-                }else{
+                } else {
                     console.log("not authorized")
                     res.json({
                         status: '403',
                         response: 'not authorized'
                     });
                 }
-            }catch(error){
-                if(error.code == 401){
+            } catch (error) {
+                if (error.code == 401) {
                     console.log("not authorized")
                     res.json({
                         status: '401',
                         response: 'not authorized'
                     });
-                }else if(error.code == 402){
+                } else if (error.code == 402) {
                     console.log("No token")
                     res.json({
                         status: '402',
                         response: 'not authorized'
                     });
-                }else if(error.code == 405){
+                } else if (error.code == 405) {
                     console.log("No user found")
                     res.json({
                         status: '405',
                         response: 'not authorized'
                     });
-                }else{
+                } else {
                     console.log(error)
                     res.json({
                         status: '401',
                         response: 'not authorized'
                     });
                 }
-            } 
+            }
         }
     },
     cache: (duration) => {
         return (req, res, next) => {
             let key = md5(req.url + "__" + JSON.stringify(req.body))
             let cacheContent = routerCache.get(key);
-            if(cacheContent){
+            if (cacheContent) {
                 console.log("request " + key + " already in cache, sending last saved data")
-                res.send( cacheContent );
+                res.send(cacheContent);
                 return
-            }else{
+            } else {
                 console.log("request " + key + " not in cache, querying database")
                 res.sendResponse = res.send
                 res.send = (body) => {
-                    routerCache.put(key, body, duration*1000);
+                    routerCache.put(key, body, duration * 1000);
                     res.sendResponse(body)
                 }
                 next()
             }
+        }
+    },
+    clientID: (duration) => {
+        return (req, res, next) => {
+            //var ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
+            //var geo = geoip.lookup(ip);
+            var userAgent = req.get('user-agent')
+            var accept = req.headers['accept']
+            var language = req.headers['accept-language']
+            var encoding = req.headers['accept-encoding']
+            var data = {
+                userAgent: userAgent,
+                language: language,
+                encoding: encoding
+            }
+            //console.log(data)
+            var cid = crypto.createHash('md5').update(userAgent + language + encoding).digest("hex");
+            req.clientInfo = data;
+            req.cid = cid;
+            next()
+
         }
     },
     log: (duration) => {

@@ -15,6 +15,7 @@ const cors = require('cors')
 const authRouter = require('./router/auth')
 var compression = require('compression');
 var helmet = require('helmet');
+
 require('./database/database')
 
 const saltRounds = 10;
@@ -42,11 +43,13 @@ app.use(compression());
 app.use(helmet());
 app.use(authRouter)
 
-var corsOptions = {
-    origin: 'https:/auth.betahuhn.de',
-    optionsSuccessStatus: 200 //some legacy browsers (IE11, various SmartTVs) choke on 204
-}
-app.use(cors(corsOptions))
+app.use(
+    cors({
+        origin: "*",
+        methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
+        preflightContinue: false
+    })
+);
 
 process.on('unhandledRejection', (reason, p) => {
     console.log("Unhandled Rejection at: Promise ", p, " reason: ", reason);
