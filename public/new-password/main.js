@@ -13,7 +13,7 @@ async function confirm(){
     },
     body: JSON.stringify({passwd: input.value, passwd2: input2.value})
   };
-  const response = await fetch('/api/new-password', options);
+  const response = await fetch('/auth/new-password', options);
   const json = await response.json();
   if (json.status == 400){
     out.innerHTML = `<h1>Dein Token ist abgelaufen.</h1>`;

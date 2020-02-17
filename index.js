@@ -77,6 +77,15 @@ app.post('/test', (request, response) => {
     });
 });
 
+app.get('/ip', (req, res) => {
+    var ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
+    console.log('Got a up request from: ' + ip);
+    res.json({
+        status: 200,
+        ip: ip
+    });
+});
+
 app.use(function(req, res, next) {
     var ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
     let date_ob = new Date();

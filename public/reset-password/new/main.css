@@ -1,7 +1,7 @@
 :root {
     background: #f5f6fa;
     color: #9c9c9c;
-    font: 1rem "PT Sans", sans-serif;
+    font: 1.2rem "PT Sans", sans-serif;
   }
   html, body {
     height: 100%;
@@ -15,8 +15,8 @@
   }
   h1{
       padding-top: 0rem;
-      padding-bottom: 1.5rem;
-      font-size: 1.4rem;
+      padding-bottom: 2rem;
+      font-size: 1.5rem;
       
   }
   .out {
@@ -59,6 +59,7 @@
     box-shadow: 0 0 10px 2px rgba(0, 0, 0, 0.1);
     border-radius: 2px;
     padding: 12px 36px;
+    margin-top: 1rem;
     margin-bottom: 1rem;
   }
   .btn--primary:hover {
@@ -78,7 +79,7 @@
     background: #677effdc;
   }
   .form__field {
-    width: 70%;
+    width: 650px;
     background: #fff;
     color: #a3a3a3;
     font: inherit;
@@ -92,12 +93,12 @@
   }
   #icon {
     list-style-type: none;
-    margin: 1rem;
+    margin: 1.5rem;
     padding: 0;
     overflow: hidden;
     background-color: rgb(255, 255, 255);
-    width: 30px;
-    height: 30px;
+    width: 60px;
+    height: 60px;
     display: block;
     color: #9c9c9c;
     text-align: center;
@@ -110,17 +111,17 @@
     color: #9c9c9c;
   }
   .signin {
-    width: 12rem;
-    height: 3rem;
+    width: 14rem;
+    height: 3.5rem;
     background: #fff;
     color: #a3a3a3;
     font: inherit;
     box-shadow: 0 6px 10px 0 rgba(0, 0, 0, 0.1);
     border: 0;
     outline: 0;
-    margin: 0rem;
+    margin: 1.8rem;
     position: fixed;
-    bottom: 25px;
+    bottom: 5px;
     padding: 2px 40px;
     font-size: 0.7rem;
    

@@ -16,13 +16,13 @@ async function auth() {
     };
     const response = await fetch('/auth/reset-password', options);
     const json = await response.json();
-    if (json.status == 400) {
-        start.innerHTML = `<h1>Diese Email-Adresse existiert nicht</h1>`;
-    } else if (json.status == 200) {
+    if (json.status == 200) {
         console.log(json);
         start.innerHTML = `<h1>Bitte überprüfe dein Email Postfach: ${json.email}</h1>`;
         out.innerHTML = `<a class="bottom" href="/login"><button class="btn btn--primary uppercase">Login</button></a>`;
-    } else {
+    } else if (json.status == 405) {
+        start.innerHTML = `<h1>Diese Email-Adresse existiert nicht</h1>`;
+    }else {
         start.innerHTML = `<h1>Es ist ein Fehler aufgetreten: ${json.status}</h1>`;
     }
 }

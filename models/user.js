@@ -309,9 +309,9 @@ userSchema.statics.findByEmail = async(email) => {
 }
 
 userSchema.statics.findByToken = async(token) => {
-    console.log(token)
+    //console.log(token)
     var date = Date.now() + 3600000 * 2
-    console.log(date)
+    //console.log(date)
     const user = await User.findOne({ reset_token: { token: token, valid: true }, resetPasswordExpires: { $gt: Date.now() + 3600000 * 2 } })
     if (!user) {
         throw ({ error: 'Token invalid or expired', code: 405 })

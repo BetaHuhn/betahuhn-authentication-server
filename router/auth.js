@@ -487,7 +487,8 @@ router.get('/auth/reset-password', async(req, res) => {
     }
     try {
         const user = await User.findByToken(req.query.token)
-        console.log(user.name)
+        console.log(user.name + " is authorized to change password")
+        //res.cookie('password_token', password_token, { HttpOnly: true, maxAge: jwtExpirySecondsAccess * 1000, domain: ".betahuhn.de", secure: true })
         res.json({
             status: 200
         })
@@ -519,7 +520,7 @@ router.post('/auth/reset-password', async(req, res) => {
     try {
         const user = await User.findByEmail(req.body.email)
         var token = await user.generateResetToken()
-        var link = "https://auth.betahuhn.de/auth/reset-password?token=" + token
+        var link = "https://auth.betahuhn.de/reset-password/new?token=" + token
         const mailOptions = {
             from: 'noreply@betahuhn.de',
             replyTo: 'noreply@betahuhn.de',
@@ -527,17 +528,17 @@ router.post('/auth/reset-password', async(req, res) => {
             subject: 'Setze dein betahuhn.de Passwort zurück',
             html: `<h1>Passwort Reset Anfrage</h1><p>Hallo ${user.name},</p><p>Du bekommst diese Email weil du oder jemand anderes angefragt hat dein Passwort zurück zu setzen. Um nun ein neues Passwort zu erstellen musst du nur auf diesen Link klicken: </p><a href="${link}"><button>Neues Passwort erstellen</button></a>`
         };
-        if (sendMails) {
-            transporter.sendMail(mailOptions, function(err, info) {
-                if (err) {
-                    console.log(err)
-                    console.log(info)
-                } else {
-                    console.log(info);
-                    console.log("Reset email sent to: " + user.email)
-                }
-            });
-        }
+        
+        transporter.sendMail(mailOptions, function(err, info) {
+            if (err) {
+                console.log(err)
+                console.log(info)
+            } else {
+                console.log(info);
+                console.log("Reset email sent to: " + user.email)
+            }
+        });
+        
         res.json({
             status: '200',
             email: user.email
@@ -548,6 +549,60 @@ router.post('/auth/reset-password', async(req, res) => {
             return res.json({
                 status: '405',
                 response: "No user with that email found"
+            });
+        } else {
+            console.log(err)
+            res.json({
+                status: '400',
+                response: "Error"
+            });
+        }
+    }
+})
+
+router.post('/auth/new-password', async(req, res) => {
+    if (!req.body.token) {
+        return res.json({
+            status: '400',
+            response: "Token invalid"
+        });
+    }
+    var password = req.body.password;
+    //return res.json({status:200})
+    try {
+        const user = await User.findByToken(req.body.token)
+        console.log(user.name + " is authorized to change password")
+        //res.cookie('password_token', password_token, { HttpOnly: true, maxAge: jwtExpirySecondsAccess * 1000, domain: ".betahuhn.de", secure: true })
+        if (/\s/.test(password)) {
+            console.log(password + " has whitespace");
+            res.json({
+                status: '424'
+            });
+        } else if (password.length > 20) {
+            console.log(password + " is too long");
+            res.json({
+                status: '425'
+            });
+        } else if (password.length < 8) {
+            console.log(password + " is too short");
+            res.json({
+                status: '426'
+            });
+        } else if (password.match("^[-_!?a-zA-Z0-9]*$")) {
+            user.password = password;
+            user.reset_token.token = null
+            user.reset_token.valid = false;
+            await user.save();
+            res.json({
+                status: 200
+            })
+        }
+    } catch (err) {
+        if (err.code == 405) {
+            console.log("Token expired or invalid")
+            return res.json({
+                status: '405',
+                response: "token invalid or expired"
             });
         } else {
             console.log(err)

@@ -2,28 +2,24 @@
 <html lang="de">
     <head>
         <meta charset="utf-8">
-        <title>Beta Huhn - URL Shortener</title>
+        <title>New Password - BetaHuhn</title>
         <meta name="viewport" content="width=device-width,initial-scale=1">
-        <meta name="google-site-verification" content="WT7HV-y_YFwgr8F9mgBk7_YHPNtcOJyvaCrFTp7Ms_0" />
         <link rel="stylesheet" href="main.css">
         <link rel="icon" href="/favicon.ico" type="image/x-icon">
         <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
-        <script type="text/javascript">
-          if (screen.width <= 699) {
-           document.location = "/mobile/reset-password";
-          }
-          </script>
     </head>
-    <body onload="run();">
+    <body>
         <main>
-            <a id="icon" href="/new" ><img src="https://auth.betahuhn.de/beta1.png" alt="Betahuhn" width="60" height="60"></a>
+            <a id="icon" href="/" ><img src="https://auth.betahuhn.de/beta1.png" alt="Betahuhn" width="60" height="60"></a>
             
             <div class="container">           
                 <div class="centered">
                     <center>
-                        <pre id="header"></pre>
-                        <pre id="start"></pre>
-                        
+                        <h1>Enter a new password:</h1>
+                        <input type="password" id="url-input" class="form__field" placeholder="new password">
+                        <input type="password" id="url-input2" class="form__field" placeholder="repeat password">
+                        <button class="btn btn--primary uppercase" onclick="confirm()">Change</button>
+                    
                         <pre id="out"></pre>
                     </center>
                 </div>

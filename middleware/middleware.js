@@ -87,12 +87,12 @@ module.exports = {
             var language = req.headers['accept-language']
             var encoding = req.headers['accept-encoding']
             var data = {
-                userAgent: userAgent,
-                language: language,
-                encoding: encoding
-            }
-            //console.log(data)
-            var cid = crypto.createHash('md5').update(userAgent + language + encoding).digest("hex");
+                    userAgent: userAgent,
+                    language: language,
+                    encoding: encoding
+                }
+                //console.log(data)
+            var cid = crypto.createHash('md5').update(String(userAgent + language + encoding)).digest("hex");
             req.clientInfo = data;
             req.cid = cid;
             next()
