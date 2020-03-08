@@ -2,7 +2,6 @@ const mongoose = require('mongoose')
 const validator = require('validator')
 const bcrypt = require('bcryptjs')
 const jwt = require('jsonwebtoken')
-const nodemailer = require('nodemailer')
 const crypto = require('crypto');
 const fs = require('fs')
 
@@ -10,15 +9,6 @@ const jwtKey = fs.readFileSync('./jwt-key', 'utf8');
 const jwtPublic = fs.readFileSync('./jwt-key.pub', 'utf8');
 const jwtExpirySecondsRefresh = 1209600;
 const jwtExpirySecondsAccess = 900; //900
-
-const OutlookKey = require('../key.json').password;
-let transporter = nodemailer.createTransport({
-    service: 'Outlook365',
-    auth: {
-        user: 'mail@creerow.de',
-        pass: OutlookKey
-    }
-});
 
 const userSchema = mongoose.Schema({
     user_id: {
@@ -76,8 +66,18 @@ const userSchema = mongoose.Schema({
         required: true
     },
     reset_token: {
-        token: String,
-        valid: Boolean
+        token: {
+            type: String
+        },
+        valid: {
+            type: Boolean
+        }
+    },
+    register_token: {
+        type: String
+    },
+    valid: {
+        type: Boolean
     },
     resetPasswordExpires: {
         type: Date
@@ -115,7 +115,6 @@ userSchema.methods.generateRefreshToken = async function(cid, oldRefreshToken) {
         console.log("Generate new family")
         var token_family = crypto.randomBytes(64).toString('hex');
     }
-    console.log("Generating refresh token")
     var user_id = user.user_id
     var name = user.name
     var rights = user.rights
@@ -186,7 +185,9 @@ userSchema.statics.refreshTokenValid = async function(token, clientID) {
         payload = jwt.verify(token, jwtPublic) //Check if refresh token is still valid
         var user_id = payload.user_id;
         var token_family = payload.token_family;
-        console.log("Family: " + token_family.slice(0,10))
+        console.log("Family: " + token_family.slice(0, 10))
+        console.log("Saved cid: " + payload.cid)
+        console.log("Send cid: " + clientID)
         var user = await User.findOne({ user_id })
         if (!user) {
             throw ({ error: 'No user found', code: 405 })
@@ -230,7 +231,7 @@ userSchema.statics.getTokenFamily = async function(refresh_token) {
         payload = jwt.verify(refresh_token, jwtPublic) //Check if refresh token is still valid
         var user_id = payload.user_id;
         var token_family = payload.token_family;
-        console.log("Family: " + token_family.slice(0,10))
+        console.log("Family: " + token_family.slice(0, 10))
         return token_family
     } catch (e) {
         if (e instanceof jwt.JsonWebTokenError) { //Refresh token not valid -> has to log in again
@@ -243,8 +244,10 @@ userSchema.statics.getTokenFamily = async function(refresh_token) {
 userSchema.methods.generateResetToken = async function() {
     const user = this
     var token = crypto.randomBytes(64).toString('hex');
-    user.reset_token.token = token
-    user.reset_token.valid = true
+    user.reset_token = {
+        token: token,
+        valid: true
+    }
     var date = Date.now() + 3600000 * 3;
     console.log(date)
     user.resetPasswordExpires = date
@@ -272,12 +275,25 @@ userSchema.methods.logoutToken = async function(token, all) {
 
 userSchema.methods.isValidToken = async function(token) {
     const user = this
+    console.log(user.tokens)
+    console.log(token)
     for (i in user.tokens) {
         if (user.tokens[i].token == token) {
             return true
         }
     }
+    console.log("token not on whitelist")
     return false
+}
+
+userSchema.statics.verifyRegisterToken = async(token) => {
+    const user = await User.findOne({ register_token: token })
+    if (!user) {
+        throw ({ error: 'Token invalid or expired', code: 405 })
+    }
+    user.valid = true;
+    await user.save()
+    return user
 }
 
 userSchema.statics.findByCredentials = async(email, password, username) => {
@@ -311,7 +327,7 @@ userSchema.statics.findByEmail = async(email) => {
 userSchema.statics.findByToken = async(token) => {
     //console.log(token)
     var date = Date.now() + 3600000 * 2
-    //console.log(date)
+        //console.log(date)
     const user = await User.findOne({ reset_token: { token: token, valid: true }, resetPasswordExpires: { $gt: Date.now() + 3600000 * 2 } })
     if (!user) {
         throw ({ error: 'Token invalid or expired', code: 405 })

@@ -1,0 +1,4 @@
+node_modules/
+key.json
+jwt-key
+jwt-key.pub

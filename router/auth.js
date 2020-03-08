@@ -11,28 +11,26 @@ const md5 = require('md5');
 const cookieParser = require('cookie-parser')
 const nodemailer = require('nodemailer')
 var crypto = require('crypto');
-var geoip = require('geoip-lite');
 
 const router = express.Router()
 const middleware = require("../middleware/middleware")
 router.use(middleware.log())
 router.use(middleware.clientID())
 
-const saltRounds = 10;
-const jwtKey = require('../key.json').jwtKey;
-const jwtPublic = fs.readFileSync('./jwt-key.pub', 'utf8');
+const jwtPublic = fs.readFileSync(path.resolve(__dirname, '../jwt-key.pub'));
 const jwtExpirySecondsRefresh = 1209600;
 const jwtExpirySecondsAccess = 900; //900
-const jwtExpirySecondsEmail = 900;
 
 const api_key = require('../key.json').api_key;
 
-const OutlookKey = require('../key.json').password;
+const privateemailKey = require('../key.json').privateEmail
 let transporter = nodemailer.createTransport({
-    service: 'Outlook365',
+    host: 'mail.privateemail.com',
+    port: 465,
+    secure: true,
     auth: {
-        user: 'mail@creerow.de',
-        pass: OutlookKey
+        user: 'schiller@mxis.ch',
+        pass: privateemailKey
     }
 });
 
@@ -42,24 +40,29 @@ router.post('/auth/register', async(req, res) => {
     var email = req.body.email
     var password = req.body.password;
     var name = req.body.name;
-    console.log("Name: " + name + " Email: " + email + " Password: " + password)
+    if (!req.body.ref) {
+        var ref = "/"
+    } else {
+        var ref = "/" + req.body.ref;
+    }
+    console.log("Name: " + name + " Email: " + email)
     if (email.length < 5 || name.length <= 2) {
         console.log("Not every field filled out");
         res.json({
             status: '408'
         });
     } else if (/\s/.test(password)) {
-        console.log(password + " has whitespace");
+        console.log("Password has whitespace");
         res.json({
             status: '404'
         });
     } else if (password.length > 20) {
-        console.log(password + " is too long");
+        console.log("Password is too long");
         res.json({
             status: '405'
         });
     } else if (password.length < 8) {
-        console.log(password + " is too short");
+        console.log("Password is too short");
         res.json({
             status: '406'
         });
@@ -70,6 +73,7 @@ router.post('/auth/register', async(req, res) => {
                 status: '407'
             });
         } else {
+            var register_token = crypto.randomBytes(32).toString('hex');
             var query = {
                 user_id: generate('1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ', 7),
                 email: email,
@@ -79,7 +83,9 @@ router.post('/auth/register', async(req, res) => {
                 rights: {
                     user: true
                 },
-                registeredAt: CurrentDate()
+                registeredAt: CurrentDate(),
+                register_token: register_token,
+                valid: false
             }
             try {
                 let user = new User(query)
@@ -104,26 +110,23 @@ router.post('/auth/register', async(req, res) => {
                         var email = doc.email
                         console.log(email)
                         const mailOptions = {
-                            from: 'noreply@betahuhn.de',
-                            replyTo: 'noreply@betahuhn.de',
+                            from: 'no-reply@mxis.ch',
+                            replyTo: 'no-reply@mxis.ch',
                             to: email,
-                            subject: 'Willkommen bei auth!',
-                            html: `<h1>Herzlichen Glückwunsch!</h1><p>Hallo ${name},</p><p>Du hast soeben einen Account bei <a href="https://auth.betahuhn.de">auth.betahuhn.de</a> erstellt. <a href="https://auth.betahuhn.de">auth.betahuhn.de</a> ist im Moment noch in der Testphase, es kann sich also noch so einiges ändern. Schau also einfach immer mal wieder auf <a href="https://gotkite.betahuhn.de">auth.betahuhn.de</a> vorbei um keine neuen features zu verpassen!</p><p>Wir freuen uns auf dich 👋</p>`
+                            subject: 'Verify your Email - Betahuhn',
+                            html: `<h1>Verify your email address</h1><p>Hello ${name},</p><p>You or someone who used your email recently created an account at <a href="https://auth.betahuhn.de${ref}">auth.betahuhn.de${ref}</a>. If you didn't do this you can ignore this email, if you did you have to verify that you own this email address by clicking the link below:</p> <h><a href="https://auth.betahuhn.de/auth/verify/register?token=${register_token}">Verify Email</a></h><br><p>See you around 👋</p>`
                         };
-                        if (sendMails) {
-                            transporter.sendMail(mailOptions, function(err, info) {
-                                if (err) {
-                                    console.log(err)
-                                } else {
-                                    console.log(info.messageTime);
-                                    console.log("Welcome email sent to: " + email)
-                                }
-                            });
-                        }
-                        var refresh_token = await user.generateRefreshToken(req.cid, undefined)
-                        var access_token = await user.generateAccessToken()
-                        res.cookie('refresh_token', refresh_token, { HttpOnly: true, maxAge: jwtExpirySecondsRefresh * 1000, domain: ".betahuhn.de", secure: true })
-                        res.cookie('access_token', access_token, { HttpOnly: true, maxAge: jwtExpirySecondsAccess * 1000, domain: ".betahuhn.de", secure: true })
+
+                        transporter.sendMail(mailOptions, function(err, info) {
+                            if (err) {
+                                console.log(err)
+                            } else {
+                                console.log(info.messageTime);
+                                console.log("Welcome email sent to: " + email)
+                            }
+                        });
+
+
                         res.json({
                             status: '200'
                         });
@@ -161,8 +164,8 @@ router.post('/auth/login', async(req, res) => {
         var rights = user.rights
         var username = user.username
         const mailOptions = {
-            from: 'noreply@betahuhn.de',
-            replyTo: 'noreply@betahuhn.de',
+            from: 'no-reply@mxis.ch',
+            replyTo: 'no-reply@mxis.ch',
             to: email,
             subject: 'Neue Anmeldung bei deinem auth.betahuhn.de Account',
             html: `<h1>Neue Anmeldung</h1><p>Hallo ${name},</p><p>Es hat sich soeben jemand mit der IP: ${ip} bei deinem Konto angemeldet. Falls das du warst, kannst du diese Email ignorieren. Falls nicht, empfehlen wir dir dein Passwort schnellst möglich <a href="https://auth.betahuhn.de">zurück zu setzen</a> um deinen Account zu schützen.</p><p>Dein <a href="https://auth.betahuhn.de">auth.betahuhn.de</a> Team 👋</p>`
@@ -308,8 +311,9 @@ router.all('/auth/authorize', async(req, res) => {
 router.get('/refresh', async(req, res) => {
     var ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
     console.log("ref: " + req.query.ref)
-    console.log("UID: " + req.cid.slice(0,10))
+    console.log("CID: " + req.cid.slice(0, 10))
     try {
+        console.log("Checking if token valid")
         const user = await User.refreshTokenValid(req.cookies.refresh_token, req.cid)
         console.log(user.name + " is authorized")
         var access_token = await user.generateAccessToken()
@@ -335,6 +339,41 @@ router.get('/refresh', async(req, res) => {
     }
 })
 
+router.get('/auth/verify/register', async(req, res) => {
+    //console.log(req.query.token)
+    if (!req.query.token) {
+        return res.json({
+            status: '405',
+            response: "missing token"
+        });
+    }
+    try {
+        const user = await User.verifyRegisterToken(req.query.token)
+        console.log(user.email + " is verified")
+            //res.cookie('password_token', password_token, { HttpOnly: true, maxAge: jwtExpirySecondsAccess * 1000, domain: ".betahuhn.de", secure: true })
+        var refresh_token = await user.generateRefreshToken(req.cid, undefined)
+        var access_token = await user.generateAccessToken()
+        res.cookie('refresh_token', refresh_token, { HttpOnly: true, maxAge: jwtExpirySecondsRefresh * 1000, domain: ".betahuhn.de", secure: true })
+        res.cookie('access_token', access_token, { HttpOnly: true, maxAge: jwtExpirySecondsAccess * 1000, domain: ".betahuhn.de", secure: true })
+        res.redirect("https://auth.betahuhn.de")
+    } catch (err) {
+        if (err.code == 405) {
+            console.log("Token expired or invalid")
+            return res.json({
+                status: '405',
+                response: "token invalid or expired"
+            });
+        } else {
+            console.log(err)
+            res.json({
+                status: '400',
+                response: "Error"
+            });
+        }
+    }
+
+})
+
 router.get('/cid', async(req, res) => {
     console.log(req.cid)
     res.json({ status: 200, cid: req.cid, data: req.clientInfo })
@@ -357,7 +396,7 @@ router.all('/auth', async(req, res) => {
     } catch (error) {
         if (error.code == 555) {
             try {
-                const user = await User.refreshTokenValid(req.cookies.refresh_token)
+                const user = await User.refreshTokenValid(req.cookies.refresh_token, req.cid)
                 console.log(user.name + " is authorized")
                 var access_token = await user.generateAccessToken()
                 res.cookie('access_token', access_token, { HttpOnly: true, maxAge: jwtExpirySecondsAccess * 1000, domain: ".betahuhn.de", secure: true })
@@ -488,7 +527,7 @@ router.get('/auth/reset-password', async(req, res) => {
     try {
         const user = await User.findByToken(req.query.token)
         console.log(user.name + " is authorized to change password")
-        //res.cookie('password_token', password_token, { HttpOnly: true, maxAge: jwtExpirySecondsAccess * 1000, domain: ".betahuhn.de", secure: true })
+            //res.cookie('password_token', password_token, { HttpOnly: true, maxAge: jwtExpirySecondsAccess * 1000, domain: ".betahuhn.de", secure: true })
         res.json({
             status: 200
         })
@@ -522,13 +561,13 @@ router.post('/auth/reset-password', async(req, res) => {
         var token = await user.generateResetToken()
         var link = "https://auth.betahuhn.de/reset-password/new?token=" + token
         const mailOptions = {
-            from: 'noreply@betahuhn.de',
-            replyTo: 'noreply@betahuhn.de',
+            from: 'no-reply@mxis.ch',
+            replyTo: 'no-reply@mxis.ch',
             to: user.email,
             subject: 'Setze dein betahuhn.de Passwort zurück',
-            html: `<h1>Passwort Reset Anfrage</h1><p>Hallo ${user.name},</p><p>Du bekommst diese Email weil du oder jemand anderes angefragt hat dein Passwort zurück zu setzen. Um nun ein neues Passwort zu erstellen musst du nur auf diesen Link klicken: </p><a href="${link}"><button>Neues Passwort erstellen</button></a>`
+            html: `<h1>Passwort Reset Anfrage</h1><p>Hallo ${user.name},</p><p>Du bekommst diese Email weil du oder jemand anderes angefragt hat dein Passwort zurück zu setzen. Um nun ein neues Passwort zu erstellen musst du nur auf diesen Link klicken: </p><a href="${link}">Neues Passwort erstellen</a>`
         };
-        
+
         transporter.sendMail(mailOptions, function(err, info) {
             if (err) {
                 console.log(err)
@@ -538,7 +577,7 @@ router.post('/auth/reset-password', async(req, res) => {
                 console.log("Reset email sent to: " + user.email)
             }
         });
-        
+
         res.json({
             status: '200',
             email: user.email
@@ -572,7 +611,7 @@ router.post('/auth/new-password', async(req, res) => {
     try {
         const user = await User.findByToken(req.body.token)
         console.log(user.name + " is authorized to change password")
-        //res.cookie('password_token', password_token, { HttpOnly: true, maxAge: jwtExpirySecondsAccess * 1000, domain: ".betahuhn.de", secure: true })
+            //res.cookie('password_token', password_token, { HttpOnly: true, maxAge: jwtExpirySecondsAccess * 1000, domain: ".betahuhn.de", secure: true })
         if (/\s/.test(password)) {
             console.log(password + " has whitespace");
             res.json({

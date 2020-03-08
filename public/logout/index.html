@@ -18,16 +18,23 @@
 
 <body>
     <main>
-        <a id="icon" href="/new"><img src="https://auth.betahuhn.de/beta1.png" alt="Betahuhn" width="60" height="60"></a>
+        <a id="icon" href="/new"><img src="https://auth.betahuhn.de/beta1.png" alt="Betahuhn" class="img"></a>
+        <div class="theme-switch-wrapper">
+            <label class="theme-switch" for="checkbox" title="Click to switch theme">
+                <input type="checkbox" id="checkbox" />
+                <div class="slider round"></div>
+          </label>
+            <p id="switchText" title="Current Theme">Light mode</p>
+        </div>
 
         <div class="container">
-            <div class="centered">
-                <center>
-                    <h1>Do you really want to log out?</h1>
-                    <button class="btn btn--primary uppercase" onclick="logout()">Yes!</button>
-                    <pre id="error"></pre>
-                </center>
-            </div>
+
+            <center>
+                <h1>Do you really want to log out?</h1>
+                <button class="btn btn--primary uppercase" onclick="logout()">Yes!</button>
+                <pre id="error"></pre>
+            </center>
+
         </div>
     </main>
     <script src="main.js"></script>

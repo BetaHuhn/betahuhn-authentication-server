@@ -1,7 +1,6 @@
 const User = require('../models/user.js');
 const md5 = require('md5');
 const cache = require('memory-cache');
-const geoip = require('geoip-lite');
 const crypto = require('crypto')
 
 var routerCache = new cache.Cache();
@@ -78,7 +77,7 @@ module.exports = {
             }
         }
     },
-    clientID: (duration) => {
+    clientID: () => {
         return (req, res, next) => {
             //var ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
             //var geo = geoip.lookup(ip);

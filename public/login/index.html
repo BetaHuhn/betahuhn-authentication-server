@@ -14,8 +14,14 @@
 
 <body>
     <main>
-        <a id="icon" href="/new"><img src="https://auth.betahuhn.de/beta1.png" alt="Betahuhn" class="img"></a>
-
+        <a id="icon" href="/"><img src="https://auth.betahuhn.de/beta1.png" alt="Betahuhn" class="img"></a>
+        <div class="theme-switch-wrapper">
+            <label class="theme-switch" for="checkbox" title="Click to switch theme">
+                <input type="checkbox" id="checkbox" />
+                <div class="slider round"></div>
+          </label>
+            <p id="switchText" title="Current Theme">Light mode</p>
+        </div>
         <div class="container">
             <div class="centered">
                 <center>
@@ -23,13 +29,12 @@
                     <input type="text" class="form__field" id="email-input" placeholder="email">
                     <input type="password" class="form__field" id="passwd-input" placeholder="password"><br>
                     <button class="btn btn--primary uppercase" id="login-button" onclick="login()">Login</button>
-
-                    <p>Forgot your password? <a href="/reset-password">Yes!</a></p>
+                    <p class="text">Forgot your password? <a href="/reset-password">Yes!</a></p>
                     <pre id="error"></pre>
+                    <div class="container signin">
+                        <p>Don't have an account yet? <a class="bottom" href="/register">Register</a></p>
+                    </div>
                 </center>
-            </div>
-            <div class="container signin">
-                <p>Don't have an account yet? <a class="bottom" href="/register">Register</a></p>
             </div>
 
         </div>

@@ -18,20 +18,6 @@ var helmet = require('helmet');
 
 require('./database/database')
 
-const saltRounds = 10;
-const jwtKey = require('./key.json').key;
-const jwtExpirySeconds = 86400
-const jwtExpirySecondsEmail = 900
-
-const OutlookKey = require('./key.json').password;
-let transporter = nodemailer.createTransport({
-    service: 'Outlook365', // no need to set host or port etc.
-    auth: {
-        user: 'mail@creerow.de',
-        pass: OutlookKey
-    }
-});
-
 app.listen(2000, () => console.log('listening on port 2000'));
 app.use(express.static('public'));
 app.use(express.json({ limit: '1mb' }));
@@ -66,6 +52,10 @@ app.get('/test', (request, response) => {
         status: '200',
         response: "GET request successfull"
     });
+    const used = process.memoryUsage();
+    for (let key in used) {
+        console.log(`${key} ${Math.round(used[key] / 1024 / 1024 * 100) / 100} MB`);
+    }
 });
 
 app.post('/test', (request, response) => {
