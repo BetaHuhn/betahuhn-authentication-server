@@ -94,6 +94,7 @@ module.exports = {
             var cid = crypto.createHash('md5').update(String(userAgent + language + encoding)).digest("hex");
             req.clientInfo = data;
             req.cid = cid;
+            console.log("Generated CID: " + cid)
             next()
 
         }

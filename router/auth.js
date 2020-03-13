@@ -159,6 +159,14 @@ router.post('/auth/login', async(req, res) => {
                 response: "User does not exist"
             });
         }
+        var lastLogin = user.lastLogin;
+        user.statistics.lastLogin = CurrentDate();
+        user.statistics.numLogins = (user.statistics.numLogins > 0) ? (user.statistics.numLogins + 1) : (user.statistics.numLogins = 1);
+        try{
+            await user.save()
+        }catch(err){
+            console.log(err)
+        }
         var name = user.name
         var user_id = user.user_id
         var rights = user.rights
@@ -178,7 +186,7 @@ router.post('/auth/login', async(req, res) => {
                     console.log("Login email sent to: " + email)
             });
         }
-        var refresh_token = await user.generateRefreshToken(req.cid, undefined)
+        var refresh_token = await user.generateRefreshToken(req.cid, undefined, req.clientInfo)
         var access_token = await user.generateAccessToken()
         res.cookie('refresh_token', refresh_token, { HttpOnly: true, maxAge: jwtExpirySecondsRefresh * 1000, domain: ".betahuhn.de", secure: true })
         res.cookie('access_token', access_token, { HttpOnly: true, maxAge: jwtExpirySecondsAccess * 1000, domain: ".betahuhn.de", secure: true })
@@ -190,7 +198,8 @@ router.post('/auth/login', async(req, res) => {
             user_id: user_id,
             rights: rights,
             access_token: access_token,
-            refresh_token: refresh_token
+            refresh_token: refresh_token,
+            lastLogin: lastLogin
         })
     } catch (error) {
         if (error.code == 408) {
@@ -317,7 +326,7 @@ router.get('/refresh', async(req, res) => {
         const user = await User.refreshTokenValid(req.cookies.refresh_token, req.cid)
         console.log(user.name + " is authorized")
         var access_token = await user.generateAccessToken()
-        var refresh_token = await user.generateRefreshToken(req.cid, req.cookies.refresh_token)
+        var refresh_token = await user.generateRefreshToken(req.cid, req.cookies.refresh_token, req.clientInfo)
         res.cookie('refresh_token', refresh_token, { HttpOnly: true, maxAge: jwtExpirySecondsRefresh * 1000, domain: ".betahuhn.de", secure: true })
         res.cookie('access_token', access_token, { HttpOnly: true, maxAge: jwtExpirySecondsAccess * 1000, domain: ".betahuhn.de", secure: true })
         if (!req.query.ref) {
@@ -351,7 +360,7 @@ router.get('/auth/verify/register', async(req, res) => {
         const user = await User.verifyRegisterToken(req.query.token)
         console.log(user.email + " is verified")
             //res.cookie('password_token', password_token, { HttpOnly: true, maxAge: jwtExpirySecondsAccess * 1000, domain: ".betahuhn.de", secure: true })
-        var refresh_token = await user.generateRefreshToken(req.cid, undefined)
+        var refresh_token = await user.generateRefreshToken(req.cid, undefined, req.clientInfo)
         var access_token = await user.generateAccessToken()
         res.cookie('refresh_token', refresh_token, { HttpOnly: true, maxAge: jwtExpirySecondsRefresh * 1000, domain: ".betahuhn.de", secure: true })
         res.cookie('access_token', access_token, { HttpOnly: true, maxAge: jwtExpirySecondsAccess * 1000, domain: ".betahuhn.de", secure: true })
@@ -672,6 +681,8 @@ router.get('/auth/logout', async(req, res) => {
         res.clearCookie('refresh_token', { domain: ".betahuhn.de" })
         res.clearCookie('access_token', { path: '/' })
         res.clearCookie('access_token', { domain: ".betahuhn.de" })
+        res.clearCookie('token', { path: '/' })
+        res.clearCookie('token', { domain: ".betahuhn.de" })
         return res.json({ status: 200, ref: ref });
     } else {
         try {
@@ -683,6 +694,8 @@ router.get('/auth/logout', async(req, res) => {
                 res.clearCookie('refresh_token', { domain: ".betahuhn.de" })
                 res.clearCookie('access_token', { path: '/' })
                 res.clearCookie('access_token', { domain: ".betahuhn.de" })
+                res.clearCookie('token', { path: '/' })
+                res.clearCookie('token', { domain: ".betahuhn.de" })
                 return res.json({ status: 200, ref: ref });
             }
             if (!req.query.all) {
@@ -696,6 +709,8 @@ router.get('/auth/logout', async(req, res) => {
                 res.clearCookie('refresh_token', { domain: ".betahuhn.de" })
                 res.clearCookie('access_token', { path: '/' })
                 res.clearCookie('access_token', { domain: ".betahuhn.de" })
+                res.clearCookie('token', { path: '/' })
+                res.clearCookie('token', { domain: ".betahuhn.de" })
                 console.log("Token cleared")
                 return res.json({ status: 200, ref: ref });
             } else {

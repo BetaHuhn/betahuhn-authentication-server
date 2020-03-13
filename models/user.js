@@ -54,7 +54,9 @@ const userSchema = mongoose.Schema({
         family: {
             type: String,
             required: true
-        }
+        },
+        created_at: Date,
+        cid: String
     }],
     rights: {
         admin: Boolean,
@@ -65,13 +67,25 @@ const userSchema = mongoose.Schema({
         type: Date,
         required: true
     },
+    statistics: {
+        lastLogin: Date,
+        lastTokenRefresh: Date,
+        numLogins: Number,
+        clientData: [{
+            cid: String,
+            userAgent: String,
+            language: String,
+            lastSeen: Date
+        }]
+    },
     reset_token: {
         token: {
             type: String
         },
         valid: {
             type: Boolean
-        }
+        },
+        created_at: Date
     },
     register_token: {
         type: String
@@ -92,7 +106,7 @@ userSchema.pre('save', async function(next) {
     next()
 })
 
-userSchema.methods.generateRefreshToken = async function(cid, oldRefreshToken) {
+userSchema.methods.generateRefreshToken = async function(cid, oldRefreshToken, clientData) {
     /* CID is the client ID generated. It is based on specific request headers to make sure the client the token was created for is the one trying to generate a new token */
     console.log("Generating refresh token");
     const user = this;
@@ -126,7 +140,25 @@ userSchema.methods.generateRefreshToken = async function(cid, oldRefreshToken) {
         algorithm: 'RS256',
         expiresIn: jwtExpirySecondsRefresh
     })
-    user.tokens = user.tokens.concat({ token: token, family: token_family })
+    user.tokens.push({ token: token, family: token_family, created_at: CurrentDate(), cid: cid })
+    user.statistics.lastTokenRefresh = CurrentDate()
+    if(user.statistics.clientData.length == 0){
+        user.statistics.clientData.push({cid: cid, userAgent: clientData.userAgent, language: clientData.language, lastSeen: CurrentDate()})
+    }else{
+        var found = false;
+        for(i in user.statistics.clientData){
+            if(user.statistics.clientData[i].cid == cid){
+                found = true;
+                user.statistics.clientData[i].lastSeen = CurrentDate()
+            }
+        }
+        if(!found){
+            user.statistics.clientData.push({cid: cid, userAgent: clientData.userAgent, language: clientData.language, lastSeen: CurrentDate()})
+            console.log("Adding new client device:")
+            console.log({cid: cid, userAgent: clientData.userAgent, language: clientData.language, lastSeen: CurrentDate()})
+        }
+    }
+    //console.log(user.statistics.clientData)
     await user.save()
     return token
 }
@@ -246,7 +278,8 @@ userSchema.methods.generateResetToken = async function() {
     var token = crypto.randomBytes(64).toString('hex');
     user.reset_token = {
         token: token,
-        valid: true
+        valid: true,
+        created_at: CurrentDate()
     }
     var date = Date.now() + 3600000 * 3;
     console.log(date)
@@ -333,6 +366,18 @@ userSchema.statics.findByToken = async(token) => {
         throw ({ error: 'Token invalid or expired', code: 405 })
     }
     return user
+}
+
+function CurrentDate() {
+    let date_ob = new Date();
+    let date = ("0" + date_ob.getDate()).slice(-2);
+    let month = ("0" + (date_ob.getMonth() + 1)).slice(-2);
+    let year = date_ob.getFullYear();
+    let hours = date_ob.getHours() + 1;
+    let minutes = date_ob.getMinutes();
+    let seconds = date_ob.getSeconds();
+    var current_date = year + "-" + month + "-" + date + " " + hours + ":" + minutes + ":" + seconds;
+    return current_date;
 }
 
 const User = mongoose.model('User', userSchema)
