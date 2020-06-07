@@ -36,7 +36,9 @@ async function login() {
             window.location.replace("/");
         } else {
             console.log("Redirecting to " + ref)
-            if (ref.indexOf('http') !== -1) {
+            if(ref == "extension"){
+                window.close();
+            }else if (ref.indexOf('http') !== -1) {
                 window.location.replace(ref);
             } else {
                 window.location.replace("https://" + ref);
@@ -103,16 +105,6 @@ function switchTheme() {
     }
 }
 
-//Add System Darkmode listener
-var darkModeMatcher = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)");
-
-function onDarkModeChange(callback) {
-    if (!darkModeMatcher) {
-        return;
-    }
-    darkModeMatcher.addListener(({ matches }) => callback(matches));
-}
-
 //Runs in the beginning. Checks if System Dark mode is on or if preference set in cookie
 function detectDarkMode() {
     console.log("Cookie: " + getCookie('darkmode'))
@@ -141,6 +133,7 @@ function detectDarkMode() {
         toggleSwitch.checked = false;
         document.cookie = "darkmode=false;path=/;domain=betahuhn.de";
     }
-    onDarkModeChange(switchTheme)
+    window.matchMedia("(prefers-color-scheme: dark)").addListener(e => e.matches && switchTheme())
+    window.matchMedia("(prefers-color-scheme: light)").addListener(e => e.matches && switchTheme())
     toggleSwitch.addEventListener('change', switchThemeSlider, false);
 }

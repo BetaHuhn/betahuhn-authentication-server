@@ -162,9 +162,9 @@ router.post('/auth/login', async(req, res) => {
         var lastLogin = user.lastLogin;
         user.statistics.lastLogin = CurrentDate();
         user.statistics.numLogins = (user.statistics.numLogins > 0) ? (user.statistics.numLogins + 1) : (user.statistics.numLogins = 1);
-        try{
+        try {
             await user.save()
-        }catch(err){
+        } catch (err) {
             console.log(err)
         }
         var name = user.name
@@ -319,8 +319,8 @@ router.all('/auth/authorize', async(req, res) => {
 
 router.get('/refresh', async(req, res) => {
     var ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
-    console.log("ref: " + req.query.ref)
-    console.log("CID: " + req.cid.slice(0, 10))
+    //console.log("ref: " + req.query.ref)
+    //console.log("CID: " + req.cid.slice(0, 10))
     try {
         console.log("Checking if token valid")
         const user = await User.refreshTokenValid(req.cookies.refresh_token, req.cid)

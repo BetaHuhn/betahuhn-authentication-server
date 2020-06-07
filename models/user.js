@@ -119,14 +119,14 @@ userSchema.methods.generateRefreshToken = async function(cid, oldRefreshToken, c
         }
         try {
             var token_family = await User.getTokenFamily(oldRefreshToken)
-            console.log("Using old family")
+                //console.log("Using old family")
         } catch (error) {
             console.log(error)
-            console.log("Generate new family")
+                //console.log("Generate new family")
             var token_family = crypto.randomBytes(64).toString('hex');
         }
     } else {
-        console.log("Generate new family")
+        //console.log("Generate new family")
         var token_family = crypto.randomBytes(64).toString('hex');
     }
     var user_id = user.user_id
@@ -142,20 +142,20 @@ userSchema.methods.generateRefreshToken = async function(cid, oldRefreshToken, c
     })
     user.tokens.push({ token: token, family: token_family, created_at: CurrentDate(), cid: cid })
     user.statistics.lastTokenRefresh = CurrentDate()
-    if(user.statistics.clientData.length == 0){
-        user.statistics.clientData.push({cid: cid, userAgent: clientData.userAgent, language: clientData.language, lastSeen: CurrentDate()})
-    }else{
+    if (user.statistics.clientData.length == 0) {
+        user.statistics.clientData.push({ cid: cid, userAgent: clientData.userAgent, language: clientData.language, lastSeen: CurrentDate() })
+    } else {
         var found = false;
-        for(i in user.statistics.clientData){
-            if(user.statistics.clientData[i].cid == cid){
+        for (i in user.statistics.clientData) {
+            if (user.statistics.clientData[i].cid == cid) {
                 found = true;
                 user.statistics.clientData[i].lastSeen = CurrentDate()
             }
         }
-        if(!found){
-            user.statistics.clientData.push({cid: cid, userAgent: clientData.userAgent, language: clientData.language, lastSeen: CurrentDate()})
-            console.log("Adding new client device:")
-            console.log({cid: cid, userAgent: clientData.userAgent, language: clientData.language, lastSeen: CurrentDate()})
+        if (!found) {
+            user.statistics.clientData.push({ cid: cid, userAgent: clientData.userAgent, language: clientData.language, lastSeen: CurrentDate() })
+                //console.log("Adding new client device:")
+                //console.log({ cid: cid, userAgent: clientData.userAgent, language: clientData.language, lastSeen: CurrentDate() })
         }
     }
     //console.log(user.statistics.clientData)
@@ -217,18 +217,18 @@ userSchema.statics.refreshTokenValid = async function(token, clientID) {
         payload = jwt.verify(token, jwtPublic) //Check if refresh token is still valid
         var user_id = payload.user_id;
         var token_family = payload.token_family;
-        console.log("Family: " + token_family.slice(0, 10))
-        console.log("Saved cid: " + payload.cid)
-        console.log("Send cid: " + clientID)
+        //console.log("Family: " + token_family.slice(0, 10))
+        //console.log("Saved cid: " + payload.cid)
+        //console.log("Send cid: " + clientID)
         var user = await User.findOne({ user_id })
         if (!user) {
             throw ({ error: 'No user found', code: 405 })
         }
         var isValid = await user.isValidToken(token) //Check if token is still on whitelist
         if (payload.cid != clientID) {
-            console.log("Saved cid: " + payload.cid)
-            console.log("Send cid: " + clientID)
-            console.log("cid don't match")
+            //console.log("Saved cid: " + payload.cid)
+            //console.log("Send cid: " + clientID)
+            //console.log("cid don't match")
             isValid = false;
         }
         if (!isValid) { //If token not on whitelist or client identification doesn't match saved cid
@@ -244,8 +244,8 @@ userSchema.statics.refreshTokenValid = async function(token, clientID) {
                 }
             }
             //user.tokens.pop(user.tokens[0])
-            console.log("removed")
-                //console.log(user.tokens)
+            //console.log("removed")
+            //console.log(user.tokens)
             await user.save()
             throw ({ error: 'Token not valid', code: 400 })
         }
@@ -263,7 +263,7 @@ userSchema.statics.getTokenFamily = async function(refresh_token) {
         payload = jwt.verify(refresh_token, jwtPublic) //Check if refresh token is still valid
         var user_id = payload.user_id;
         var token_family = payload.token_family;
-        console.log("Family: " + token_family.slice(0, 10))
+        //console.log("Family: " + token_family.slice(0, 10))
         return token_family
     } catch (e) {
         if (e instanceof jwt.JsonWebTokenError) { //Refresh token not valid -> has to log in again
@@ -282,7 +282,7 @@ userSchema.methods.generateResetToken = async function() {
         created_at: CurrentDate()
     }
     var date = Date.now() + 3600000 * 3;
-    console.log(date)
+    //console.log(date)
     user.resetPasswordExpires = date
     await user.save()
     return token
@@ -308,8 +308,8 @@ userSchema.methods.logoutToken = async function(token, all) {
 
 userSchema.methods.isValidToken = async function(token) {
     const user = this
-    console.log(user.tokens)
-    console.log(token)
+        //console.log(user.tokens)
+        //console.log(token)
     for (i in user.tokens) {
         if (user.tokens[i].token == token) {
             return true
@@ -358,10 +358,11 @@ userSchema.statics.findByEmail = async(email) => {
 }
 
 userSchema.statics.findByToken = async(token) => {
-    //console.log(token)
+    console.log(token)
     var date = Date.now() + 3600000 * 2
-        //console.log(date)
-    const user = await User.findOne({ reset_token: { token: token, valid: true }, resetPasswordExpires: { $gt: Date.now() + 3600000 * 2 } })
+    console.log(date)
+    const user = await User.findOne({ "reset_token.token": token, "reset_token.valid": true, resetPasswordExpires: { $gt: Date.now() + 3600000 * 2 } })
+    console.log(user)
     if (!user) {
         throw ({ error: 'Token invalid or expired', code: 405 })
     }
@@ -373,7 +374,7 @@ function CurrentDate() {
     let date = ("0" + date_ob.getDate()).slice(-2);
     let month = ("0" + (date_ob.getMonth() + 1)).slice(-2);
     let year = date_ob.getFullYear();
-    let hours = date_ob.getHours() + 1;
+    let hours = date_ob.getHours();
     let minutes = date_ob.getMinutes();
     let seconds = date_ob.getSeconds();
     var current_date = year + "-" + month + "-" + date + " " + hours + ":" + minutes + ":" + seconds;
