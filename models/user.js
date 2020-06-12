@@ -4,11 +4,12 @@ const bcrypt = require('bcryptjs')
 const jwt = require('jsonwebtoken')
 const crypto = require('crypto');
 const fs = require('fs')
+const log = require("../utils/log");
 
 const jwtKey = fs.readFileSync('./jwt-key', 'utf8');
 const jwtPublic = fs.readFileSync('./jwt-key.pub', 'utf8');
 const jwtExpirySecondsRefresh = 1209600;
-const jwtExpirySecondsAccess = 900; //900
+const jwtExpirySecondsAccess = 900;
 
 const userSchema = mongoose.Schema({
     user_id: {
@@ -18,8 +19,7 @@ const userSchema = mongoose.Schema({
     },
     name: {
         type: String,
-        required: true,
-        trim: true
+        required: true
     },
     email: {
         type: String,
@@ -60,6 +60,7 @@ const userSchema = mongoose.Schema({
     }],
     rights: {
         admin: Boolean,
+        extended: Boolean,
         moderator: Boolean,
         user: Boolean
     },
@@ -108,8 +109,9 @@ userSchema.pre('save', async function(next) {
 
 userSchema.methods.generateRefreshToken = async function(cid, oldRefreshToken, clientData) {
     /* CID is the client ID generated. It is based on specific request headers to make sure the client the token was created for is the one trying to generate a new token */
-    console.log("Generating refresh token");
+    log.info("Generating refresh token");
     const user = this;
+    let token_family;
     if (oldRefreshToken != undefined) {
         for (i in user.tokens) {
             if (user.tokens[i].token == oldRefreshToken) {
@@ -118,21 +120,16 @@ userSchema.methods.generateRefreshToken = async function(cid, oldRefreshToken, c
             }
         }
         try {
-            var token_family = await User.getTokenFamily(oldRefreshToken)
-                //console.log("Using old family")
+            token_family = await User.getTokenFamily(oldRefreshToken)
         } catch (error) {
-            console.log(error)
-                //console.log("Generate new family")
-            var token_family = crypto.randomBytes(64).toString('hex');
+            log.fatal(error)
+            token_family = crypto.randomBytes(64).toString('hex');
         }
     } else {
-        //console.log("Generate new family")
-        var token_family = crypto.randomBytes(64).toString('hex');
+        token_family = crypto.randomBytes(64).toString('hex');
     }
-    var user_id = user.user_id
-    var name = user.name
-    var rights = user.rights
-    var email = user.email
+
+    const { user_id, name, rights, email } = user;
     const token = jwt.sign({ user_id, name, rights, email, token_family: token_family, cid: cid }, jwtKey, {
         issuer: "auth.betahuhn.de",
         subject: email,
@@ -140,36 +137,32 @@ userSchema.methods.generateRefreshToken = async function(cid, oldRefreshToken, c
         algorithm: 'RS256',
         expiresIn: jwtExpirySecondsRefresh
     })
-    user.tokens.push({ token: token, family: token_family, created_at: CurrentDate(), cid: cid })
-    user.statistics.lastTokenRefresh = CurrentDate()
+
+    user.tokens.push({ token: token, family: token_family, created_at: new Date(), cid: cid })
+    user.statistics.lastTokenRefresh = new Date();
+
     if (user.statistics.clientData.length == 0) {
-        user.statistics.clientData.push({ cid: cid, userAgent: clientData.userAgent, language: clientData.language, lastSeen: CurrentDate() })
+        user.statistics.clientData.push({ cid: cid, userAgent: clientData.userAgent, language: clientData.language, lastSeen: new Date() })
     } else {
-        var found = false;
+        let found = false;
         for (i in user.statistics.clientData) {
             if (user.statistics.clientData[i].cid == cid) {
                 found = true;
-                user.statistics.clientData[i].lastSeen = CurrentDate()
+                user.statistics.clientData[i].lastSeen = new Date();
             }
         }
         if (!found) {
-            user.statistics.clientData.push({ cid: cid, userAgent: clientData.userAgent, language: clientData.language, lastSeen: CurrentDate() })
-                //console.log("Adding new client device:")
-                //console.log({ cid: cid, userAgent: clientData.userAgent, language: clientData.language, lastSeen: CurrentDate() })
+            user.statistics.clientData.push({ cid: cid, userAgent: clientData.userAgent, language: clientData.language, lastSeen: new Date() })
         }
     }
-    //console.log(user.statistics.clientData)
     await user.save()
     return token
 }
 
 userSchema.methods.generateAccessToken = async function() {
-    const user = this
-    console.log("Generating access token")
-    var user_id = user.user_id
-    var name = user.name
-    var rights = user.rights
-    var email = user.email
+    const user = this;
+    log.info("Generating access token")
+    const { user_id, name, rights, email } = user;
     const token = jwt.sign({ user_id, name, rights, email }, jwtKey, {
         issuer: "auth.betahuhn.de",
         subject: user_id,
@@ -181,125 +174,102 @@ userSchema.methods.generateAccessToken = async function() {
 
 userSchema.statics.isAuthorized = async function(token) {
     if (!token) {
-        console.log("No Access token")
+        log.warn("No Access token")
         throw ({ error: 'generate new access token', code: 555 })
     }
-    var payload
     try {
-        payload = jwt.verify(token, jwtPublic) //Check if access token is still valid
-        var user_id = payload.user_id
-        const user = await User.findOne({ user_id })
+        const payload = jwt.verify(token, jwtPublic) //Check if access token is still valid
+        const user = await User.findOne({ user_id: payload.user_id })
         if (!user) {
-            console.log("No user found")
+            log.warn("No user found")
             throw ({ error: 'No user found', code: 405 })
         }
         return user
-    } catch (e) {
-        if (e instanceof jwt.TokenExpiredError) { //If access token expired check if refresh token valid
-            console.log("Access token expired")
+    } catch (err) {
+        if (err instanceof jwt.TokenExpiredError) { //If access token expired check if refresh token valid
+            log.warn("Access token expired")
             throw ({ error: 'generate new access token', code: 555 })
-        } else if (e instanceof jwt.JsonWebTokenError) { //Access token not valid -> has to log in again
-            console.log("Access token not valid")
+        } else if (err instanceof jwt.JsonWebTokenError) { //Access token not valid -> has to log in again
+            log.warn("Access token not valid")
             throw ({ error: 'Unauthorized', code: 401 })
         }
-        console.log("Error: " + e)
-        throw ({ error: e, code: 400 })
+        log.fatal(err)
+        throw ({ error: err, code: 400 })
     }
 }
 
 userSchema.statics.refreshTokenValid = async function(token, clientID) {
     if (!token) {
-        console.log("No refresh token")
+        log.warn("No refresh token")
         throw ({ error: 'No token', code: 402 })
     }
-    var payload
     try {
-        payload = jwt.verify(token, jwtPublic) //Check if refresh token is still valid
-        var user_id = payload.user_id;
-        var token_family = payload.token_family;
-        //console.log("Family: " + token_family.slice(0, 10))
-        //console.log("Saved cid: " + payload.cid)
-        //console.log("Send cid: " + clientID)
-        var user = await User.findOne({ user_id })
+        const payload = jwt.verify(token, jwtPublic);
+        const { user_id, token_family } = payload;
+        const user = await User.findOne({ user_id })
         if (!user) {
             throw ({ error: 'No user found', code: 405 })
         }
-        var isValid = await user.isValidToken(token) //Check if token is still on whitelist
-        if (payload.cid != clientID) {
-            //console.log("Saved cid: " + payload.cid)
-            //console.log("Send cid: " + clientID)
-            //console.log("cid don't match")
-            isValid = false;
-        }
-        if (!isValid) { //If token not on whitelist or client identification doesn't match saved cid
-            //console.log(user.tokens)
-            //console.log(user.tokens.length)
-            var tokenLength = user.tokens.length;
-            for (i = 0; i < tokenLength; i++) {
-                //console.log(i)
-                //console.log("Family: " + user.tokens[i].family)
+        /* Check if token on whitelist and cid match */
+        const isValid = await user.isValidToken(token);
+        if (!isValid || payload.cid != clientID) {
+            log.warn("token not valid")
+            const tokenLength = user.tokens.length;
+            for (let i = 0; i < tokenLength; i++) {
                 if (user.tokens[i].family == token_family) {
-                    // console.log("match")
                     user.tokens.pop(user.tokens[i])
                 }
             }
-            //user.tokens.pop(user.tokens[0])
-            //console.log("removed")
-            //console.log(user.tokens)
             await user.save()
             throw ({ error: 'Token not valid', code: 400 })
         }
         return user
-    } catch (e) {
-        if (e instanceof jwt.JsonWebTokenError) { //Refresh token not valid -> has to log in again
+    } catch (err) {
+        if (err instanceof jwt.JsonWebTokenError) {
             throw ({ error: 'Unauthorized', code: 401 })
         }
-        throw ({ error: e, code: 400 })
+        throw ({ error: err, code: 400 })
     }
 }
 
 userSchema.statics.getTokenFamily = async function(refresh_token) {
     try {
-        payload = jwt.verify(refresh_token, jwtPublic) //Check if refresh token is still valid
-        var user_id = payload.user_id;
-        var token_family = payload.token_family;
-        //console.log("Family: " + token_family.slice(0, 10))
-        return token_family
-    } catch (e) {
-        if (e instanceof jwt.JsonWebTokenError) { //Refresh token not valid -> has to log in again
+        const payload = jwt.verify(refresh_token, jwtPublic);
+        return payload.token_family;
+    } catch (err) {
+        if (err instanceof jwt.JsonWebTokenError) {
             throw ({ error: 'Unauthorized', code: 401 })
         }
-        throw ({ error: e, code: 400 })
+        throw ({ error: err, code: 400 })
     }
 }
 
 userSchema.methods.generateResetToken = async function() {
-    const user = this
-    var token = crypto.randomBytes(64).toString('hex');
+    const user = this;
+    const token = crypto.randomBytes(64).toString('hex');
     user.reset_token = {
         token: token,
         valid: true,
-        created_at: CurrentDate()
+        created_at: new Date()
     }
-    var date = Date.now() + 3600000 * 3;
-    //console.log(date)
-    user.resetPasswordExpires = date
-    await user.save()
-    return token
+    const date = Date.now() + 3600000 * 3;
+    user.resetPasswordExpires = date;
+    await user.save();
+    return token;
 }
 
 userSchema.methods.logoutToken = async function(token, all) {
-    const user = this
-        //console.log(user.tokens)
-    for (i in user.tokens) {
+    const user = this;
+    let found = false;
+    for (let i in user.tokens) {
         if (all) {
             user.tokens[i].remove();
-            var found = true;
+            found = true;
         } else if (user.tokens[i].token == token) {
             user.tokens[i].remove(token);
-            var found = true;
+            found = true;
         } else {
-            var found = false;
+            found = false;
         }
     }
     await user.save()
@@ -307,16 +277,14 @@ userSchema.methods.logoutToken = async function(token, all) {
 }
 
 userSchema.methods.isValidToken = async function(token) {
-    const user = this
-        //console.log(user.tokens)
-        //console.log(token)
-    for (i in user.tokens) {
-        if (user.tokens[i].token == token) {
-            return true
+    const user = this;
+    for (let i in user.tokens) {
+        if (user.tokens[i].token === token) {
+            return true;
         }
     }
-    console.log("token not on whitelist")
-    return false
+    log.warn("token not on whitelist")
+    return false;
 }
 
 userSchema.statics.verifyRegisterToken = async(token) => {
@@ -325,60 +293,45 @@ userSchema.statics.verifyRegisterToken = async(token) => {
         throw ({ error: 'Token invalid or expired', code: 405 })
     }
     user.valid = true;
-    await user.save()
-    return user
+    await user.save();
+    return user;
 }
 
-userSchema.statics.findByCredentials = async(email, password, username) => {
+userSchema.statics.findByCredentials = async(email, password) => {
     const user = await User.findOne({ email })
     if (!user) {
         throw ({ error: 'User not found', code: 405 })
     }
-    const isPasswordMatch = await bcrypt.compare(password, user.password)
+    const isPasswordMatch = await bcrypt.compare(password, user.password);
     if (!isPasswordMatch) {
-        throw ({ error: 'Wrong password', code: 408 })
+        throw ({ error: 'Wrong password', code: 408 });
     }
-    return user
+    return user;
 }
 
 userSchema.statics.findByUserID = async(user_id) => {
-    const user = await User.findOne({ user_id })
+    const user = await User.findOne({ user_id });
     if (!user) {
-        throw ({ error: 'No spot found', code: 405 })
+        throw ({ error: 'No spot found', code: 405 });
     }
-    return user
+    return user;
 }
 
 userSchema.statics.findByEmail = async(email) => {
-    const user = await User.findOne({ email })
+    const user = await User.findOne({ email });
     if (!user) {
-        throw ({ error: 'No user found', code: 405 })
+        throw ({ error: 'No user found', code: 405 });
     }
-    return user
+    return user;
 }
 
 userSchema.statics.findByToken = async(token) => {
-    console.log(token)
-    var date = Date.now() + 3600000 * 2
-    console.log(date)
-    const user = await User.findOne({ "reset_token.token": token, "reset_token.valid": true, resetPasswordExpires: { $gt: Date.now() + 3600000 * 2 } })
-    console.log(user)
+    const date = Date.now() + 3600000 * 2;
+    const user = await User.findOne({ "reset_token.token": token, "reset_token.valid": true, resetPasswordExpires: { $gt: date } })
     if (!user) {
-        throw ({ error: 'Token invalid or expired', code: 405 })
+        throw ({ error: 'Token invalid or expired', code: 405 });
     }
-    return user
-}
-
-function CurrentDate() {
-    let date_ob = new Date();
-    let date = ("0" + date_ob.getDate()).slice(-2);
-    let month = ("0" + (date_ob.getMonth() + 1)).slice(-2);
-    let year = date_ob.getFullYear();
-    let hours = date_ob.getHours();
-    let minutes = date_ob.getMinutes();
-    let seconds = date_ob.getSeconds();
-    var current_date = year + "-" + month + "-" + date + " " + hours + ":" + minutes + ":" + seconds;
-    return current_date;
+    return user;
 }
 
 const User = mongoose.model('User', userSchema)

@@ -1,92 +1,60 @@
 const express = require('express');
-const mysql = require('mysql');
-const bodyParser = require('body-parser')
-const bcrypt = require('bcryptjs');
-const generate = require('nanoid/generate')
-const request = require('request');
-const fs = require('fs');
-const path = require('path');
+const bodyParser = require('body-parser');
+require('dotenv').config();
 const app = express();
-const jwt = require('jsonwebtoken')
-const md5 = require('md5');
-const cookieParser = require('cookie-parser')
-const nodemailer = require('nodemailer')
-const cors = require('cors')
+const cookieParser = require('cookie-parser');
+const cors = require('cors');
+const compression = require('compression');
+const helmet = require('helmet');
+const statusCodes = require("./utils/status");
+const { routeLog, sendResult } = require("./middleware/middleware");
+const database = require('./database/database');
+const log = require("./utils/log");
+
 const authRouter = require('./router/auth')
-var compression = require('compression');
-var helmet = require('helmet');
 
-require('./database/database')
-
-app.listen(2000, () => console.log('listening on port 2000'));
 app.use(express.static('public'));
 app.use(express.json({ limit: '1mb' }));
-app.set("view engine", "ejs");
+app.use(routeLog())
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }))
-app.use(cookieParser())
-app.use(compression());
 app.use(helmet());
+app.use(helmet.hidePoweredBy({ setTo: 'Nokia 3310' }));
+app.use(compression());
+app.use(cookieParser())
+app.set('trust proxy', 1);
+
+const corsOptions = {
+    origin: '*',
+    methods: ["GET", "POST", "OPTIONS"],
+    preflightContinue: true,
+    optionsSuccessStatus: 200
+}
+app.use(cors(corsOptions))
 app.use(authRouter)
 
-app.use(
-    cors({
-        origin: "*",
-        methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
-        preflightContinue: false
-    })
-);
+/**
+ * Connect to database and listen to given port
+ */
+async function startServer() {
+    try {
+        await database.connect();
+        const PORT = process.env.PORT || 3000;
+        app.listen(PORT, () => log.success("listening on port " + PORT));
 
-process.on('unhandledRejection', (reason, p) => {
-    console.log("Unhandled Rejection at: Promise ", p, " reason: ", reason);
-});
-process.on('uncaughtException', (error) => {
-    console.log('Shit hit the fan (uncaughtException): ', error);
-    process.exit(1);
-})
-
-app.get('/test', (request, response) => {
-    var ip = request.headers['x-forwarded-for'] || request.connection.remoteAddress;
-    console.log('Got a test request from: ' + ip);
-    response.json({
-        status: '200',
-        response: "GET request successfull"
-    });
-    const used = process.memoryUsage();
-    for (let key in used) {
-        console.log(`${key} ${Math.round(used[key] / 1024 / 1024 * 100) / 100} MB`);
+    } catch (err) {
+        log.fatal("Server setup failed. Wrong server IP or authentication?");
+        log.fatal(err);
+        process.exit(1);
     }
-});
-
-app.post('/test', (request, response) => {
-    var ip = request.headers['x-forwarded-for'] || request.connection.remoteAddress;
-    console.log('Got a test request from: ' + ip);
-    response.json({
-        status: '200',
-        response: "POST request successfull"
-    });
-});
+}
+startServer();
 
 app.get('/ip', (req, res) => {
-    var ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
-    console.log('Got a up request from: ' + ip);
-    res.json({
-        status: 200,
-        ip: ip
-    });
+    const ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
+    sendResult(res, ip, statusCodes.OK)
 });
 
 app.use(function(req, res, next) {
-    var ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
-    let date_ob = new Date();
-    let date = ("0" + date_ob.getDate()).slice(-2);
-    let month = ("0" + (date_ob.getMonth() + 1)).slice(-2);
-    let year = date_ob.getFullYear();
-    let hours = date_ob.getHours();
-    let minutes = date_ob.getMinutes();
-    let seconds = date_ob.getSeconds();
-    var time = year + "-" + month + "-" + date + " " + hours + ":" + minutes + ":" + seconds
-    console.log(time + " " + req.method + " " + req.originalUrl + ' request from: ' + ip + " -> 404");
-    res.status(404);
-    res.send('404: File Not Found');
+    res.status(statusCodes.NOT_FOUND).render("../public/error/404/index.ejs");
 });
